@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Rating Questionnaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+            position: relative;
+        }
+
+       .instructions {
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+       .question-group {
+            margin-bottom: 60px;
+        }
+
+       .question-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+       .image-card {
+            width: 250px;
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: white;
+            border-radius: 10px;
+        }
+
+       .image-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+       .controls {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+       .control-group input[type="number"] {
+            width: 40px;
+            text-align: center;
+        }
+
+       .button-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+       .thank-you-message {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 30px;
+        }
+
+        /* Floating reference images */
+       .floating-images {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+       .floating-images img {
+            width: 150px;
+            height: auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body ondblclick="scrollToTop()">
+    <h1>User Study</h1>
+    <div class="instructions">
+        <p>Please evaluate the images based on the following criteria. Assign scores based on each criterion to reflect
+            your judgment. You can adjust your scores at any time before submitting.</p>
+        <p>Tips: Double-click a blank space to return to the top.</p>
+        <ol>
+            <li><strong>Style</strong>: Assess how effectively the generated images capture and replicate the unique visual or
+                artistic qualities of the original references. This includes examining details such as brushstrokes, texture,
+                and overall artistic fidelity. A higher score indicates a more faithful and nuanced replication of style.
+            </li>
+            <li><strong>Structure</strong>: Evaluate the accuracy with which the generated images preserve structural details,
+                including shapes, lines, and spatial arrangements. This involves determining whether essential structural
+                elements have been maintained without distortion. A higher score reflects better compositional integrity and
+                structural fidelity.
+            </li>
+            <li><strong>Decoration</strong>: Evaluate the presence and effectiveness of additional visual elements and
+                stylistic embellishments. Assess whether these decorations are seamlessly integrated and enhance the overall
+                visual complexity without overshadowing the primary subject matter. Higher scores indicate better use of
+                decorative elements.
+            </li>
+            <li><strong>Aesthetic</strong>: Conduct a holistic assessment of the image's visual quality, including balance,
+                composition, and overall appeal. Consider how well the image adheres to principles of visual harmony and
+                attractiveness. Higher scores should be given to images that demonstrate strong composition, visual balance,
+                and artistic refinement.
+            </li>
+        </ol>
+    </div>
+
+    <!-- Floating reference images -->
+    <div class="floating-images">
+        <img src="Style.png" alt="Style Reference">
+        <img src="Structure.png" alt="Structure Reference">
+    </div>
+
+    <div id="questions">
+        <!-- Questions will be populated here -->
+    </div>
+
+    <div class="button-container">
+        <button onclick="saveResultsToFile()">Save Results</button>
+    </div>
+
+    <div id="final-message"></div>
+
+    <script>
+        const subfolders = ["ControlNet", "B-lora", "Instant_style", "IPAdapter", "ReChar", "StyleAlign"];
+        const categories = ["Style", "Structure", "Decoration", "Aesthetic"];
+        const allImageNames = ["maltese_dog.png", "weimaraner.png", "blenheim_spaniel.png", "boston_bull.png", "great_white_shark.png", "kelpie.png", "black_stork.png", "slug.png", "american_lobster.png", 
+        "standard_schnauzer.png", "clumber.png", "australian_terrier.png", "kerry_blue_terrier.png", "brittany_spaniel.png", "electric_ray.png", "limpkin.png", "dandie_dinmont.png", "spoonbill.png", "wallaby.png",
+        "sea_lion.png", "rhodesian_ridgeback.png", "crane.png", "welsh_springer_spaniel.png", "grey_whale.png", "pelican.png", "brain_coral.png", "chihuahua.png", "gordon_setter.png", "koala.png", "white_stork.png",
+        "flatworm.png", "japanese_spaniel.png", "sealyham_terrier.png", "spiny_lobster.png", "bedlington_terrier.png", "albatross.png", "nematode.png", "curly-coated_retriever.png", "giant_schnauzer.png", "chesapeake_bay_retriever.png",
+        "scottish_deerhound.png", "chambered_nautilus.png", "killer_whale.png", "ibizan_hound.png", "labrador_retriever.png", "hammerhead.png", "goldfish.png", "dugong.png", "italian_greyhound.png", "bouvier_des_flandres.png", 
+        "conch.png", "bloodhound.png", "shih-tzu.png", "oystercatcher.png", "briard.png", "king_crab.png", "afghan_hound.png", "european_gallinule.png", "rottweiler.png", "wire-haired_fox_terrier.png", "otterhound.png", 
+        "collie.png", "flat-coated_retriever.png", "basset.png", "vizsla.png", "german_short-haired_pointer.png", "bluetick.png", "wombat.png", "redshank.png", "german_shepherd.png", "american_egret.png", "platypus.png", "sussex_spaniel.png",
+        "american_staffordshire_terrier.png", "silky_terrier.png", "jellyfish.png", "staffordshire_bullterrier.png", "norfolk_terrier.png", "lakeland_terrier.png", "west_highland_white_terrier.png", "yorkshire_terrier.png", 
+        "hermit_crab.png", "scotch_terrier.png", "cocker_spaniel.png", "sea_slug.png", "bittern.png", "bustard.png", "english_springer.png", "airedale.png", "golden_retriever.png", "old_english_sheepdog.png", "king_penguin.png",
+         "cairn.png", "soft-coated_wheaten_terrier.png", "crayfish.png", "irish_wolfhound.png", "beagle.png", "little_blue_heron.png", "tusker.png", "pekinese.png", "lhasa.png", "tibetan_terrier.png", "kuvasz.png", "tench.png", 
+        "doberman.png", "norwich_terrier.png", "irish_water_spaniel.png", "norwegian_elkhound.png", "tiger_shark.png", "flamingo.png", "chiton.png", "sea_anemone.png", "black_swan.png", "dowitcher.png", "komondor.png"];
+
+        // 获取问题容器的元素
+        const questionsContainer = document.getElementById("questions");
+
+        // 用于打乱数组顺序的函数
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                // 生成随机索引
+                const j = Math.floor(Math.random() * (i + 1));
+                // 交换数组中的两个元素
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 用于生成问题的函数
+        function generateQuestions() {
+            let availableImageNames = [];
+            for (let imageName of allImageNames) {
+                let found = false;
+                for (let subfolder of subfolders) {
+                    if (checkImageExists(subfolder, imageName)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    availableImageNames.push(imageName);
+                }
+            }
+
+            const selectedImageNames = availableImageNames.length >= 30? availableImageNames.slice(0, 30) : availableImageNames;
+
+            // 遍历选中的图片名称并生成问题组
+            selectedImageNames.forEach((imageName, questionGroupIndex) => {
+                // 创建问题组的 div 元素
+                const questionGroupDiv = document.createElement("div");
+                questionGroupDiv.classList.add("question-group");
+
+                // 添加问题组的标题
+                const questionGroupTitle = document.createElement("h2");
+                questionGroupTitle.textContent = `Text-Guided: ${imageName}`;
+                questionGroupDiv.appendChild(questionGroupTitle);
+
+                // 创建包含图片的容器
+                const imageContainer = document.createElement("div");
+                imageContainer.classList.add("question-container");
+
+                // 打乱子文件夹顺序并以随机顺序显示图片
+                const shuffledSubfolders = [...subfolders];
+                shuffleArray(shuffledSubfolders);
+
+                // 遍历每个子文件夹并显示图片
+                shuffledSubfolders.forEach((subfolder, index) => {
+                    const card = document.createElement("div");
+                    card.classList.add("image-card");
+                    card.innerHTML = `<img src="${subfolder}/${imageName}" alt="Image ${index + 1}">`;
+                    imageContainer.appendChild(card);
+                });
+
+                questionGroupDiv.appendChild(imageContainer);
+
+                // 为每个分类创建问题集
+                categories.forEach((category, categoryIndex) => {
+                    const questionDiv = document.createElement("div");
+                    questionDiv.classList.add("question");
+
+                    // 添加分类标题
+                    const questionTitle = document.createElement("h3");
+                    questionTitle.textContent = `${category}`;
+                    questionDiv.appendChild(questionTitle);
+
+                    // 创建评分控件的容器
+                    const questionControlsContainer = document.createElement("div");
+                    questionControlsContainer.classList.add("question-container");
+
+                    // 为每个子文件夹创建评分输入控件
+                    shuffledSubfolders.forEach((subfolder, index) => {
+                        const controlCard = document.createElement("div");
+                        controlCard.classList.add("controls");
+                        controlCard.innerHTML = `
+                            <div class="control-group">
+                                <label>Score:</label>
+                                <button onclick="changeScore('${questionGroupIndex}-${categoryIndex}-${index}', -1)">-</button>
+                                <input type="number" id="score-${questionGroupIndex}-${categoryIndex}-${index}" value="3" min="0" max="5">
+                                <button onclick="changeScore('${questionGroupIndex}-${categoryIndex}-${index}', 1)">+</button>
+                            </div>
+                        `;
+                        questionControlsContainer.appendChild(controlCard);
+                    });
+
+                    questionDiv.appendChild(questionControlsContainer);
+                    questionGroupDiv.appendChild(questionDiv);
+                });
+
+                // 将问题组添加到问题容器中
+                questionsContainer.appendChild(questionGroupDiv);
+            });
+
+            // 添加最终的感谢信息
+            const finalMessageDiv = document.getElementById('final-message');
+            const thankYouMessage = document.createElement('div');
+            thankYouMessage.className = 'thank-you-message';
+            thankYouMessage.textContent = 'Thank you so much for your help! We believe you will achieve great success, make significant contributions, and publish many influential papers in the future.';
+            finalMessageDiv.appendChild(thankYouMessage);
+        }
+
+        function checkImageExists(subfolder, imageName) {
+            return Math.random() < 0.8;
+        }
+
+        // 修改评分的函数
+        function changeScore(id, delta) {
+            // 获取对应评分输入框的元素
+            const input = document.getElementById(`score-${id}`);
+            // 将输入值转换为整数并进行增减
+            let value = parseInt(input.value);
+            value = Math.min(Math.max(value + delta, 0), 5); // 限制值在 0 到 5 之间
+            input.value = value; // 更新输入框的值
+        }
+
+        // 保存结果到文本文件的函数
+        function saveResultsToFile() {
+            const results = {};
+            subfolders.forEach(subfolder => {
+                results[subfolder] = {};
+                categories.forEach(category => {
+                    results[subfolder][category] = [];
+                    // 遍历并记录每张图片的评分
+                    const selectedImageNames = allImageNames.slice(0, 50);
+                    selectedImageNames.forEach((imageName, index) => {
+                        const score = parseInt(document.getElementById(`score-${index}-${categories.indexOf(category)}-${subfolders.indexOf(subfolder)}`).value);
+                        results[subfolder][category].push(score);
+                    });
+                });
+            });
+
+            // 计算每个分类的平均分和偏好率
+            const output = {};
+            subfolders.forEach(subfolder => {
+                output[subfolder] = {};
+                categories.forEach(category => {
+                    const scores = results[subfolder][category];
+                    const averageScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2); // 平均分
+                    const preferenceRate = ((scores.filter(score => score > 3).length / scores.length) * 100).toFixed(2); // 偏好率
+                    output[subfolder][category] = {
+                        averageScore,
+                        preferenceRate,
+                        scores
+                    };
+                });
+            });
+
+            // 格式化输出并显示为文本
+            let formattedOutput = '';
+            Object.keys(output).forEach(subfolder => {
+                formattedOutput += `${subfolder}:\n`;
+                Object.keys(output[subfolder]).forEach(category => {
+                    const { averageScore, preferenceRate, scores } = output[subfolder][category];
+                    formattedOutput += `${category} -> Average Score: ${averageScore}, Preference Rate: ${preferenceRate}%\n`;
+                    formattedOutput += `Scores: ${scores.join(', ')}\n\n`;
+                });
+            });
+
+            // 创建包含格式化输出的文本文件
+            const blob = new Blob([formattedOutput], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'image_ratings.txt';
+            link.click();
+        }
+
+        // 初始化问题
+        generateQuestions();
+
+    </script>
+</body>
+
+</html>
